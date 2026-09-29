@@ -1,0 +1,10 @@
+{
+  "name": "Salah Companion",
+  "description": "Production-ready Progressive Web App (PWA) to remember and track daily prayers, with push notifications, Qibla compass, tasbih, and Islamic content.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#042f2e" />
+      <stop offset="50%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="35%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="softGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0.05" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with subtle corner radius -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)" />
+
+  <!-- Outer Islamic geometric ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-opacity="0.4" stroke-dasharray="8 6" />
+  <circle cx="256" cy="256" r="195" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" stroke-opacity="0.3" />
+
+  <!-- Background decorative 8-point star glow -->
+  <g transform="translate(256, 256) scale(1.1)" opacity="0.15">
+    <rect x="-100" y="-100" width="200" height="200" rx="12" fill="url(#goldGrad)" />
+    <rect x="-100" y="-100" width="200" height="200" rx="12" fill="url(#goldGrad)" transform="rotate(45)" />
+  </g>
+
+  <!-- Crescent Moon -->
+  <path d="M 275 140 
+           A 125 125 0 1 0 350 365 
+           A 110 110 0 1 1 275 140 Z" 
+        fill="url(#goldGrad)" 
+        filter="drop-shadow(0 4px 12px rgba(217, 119, 6, 0.4))" />
+
+  <!-- 8-Point Star inside Crescent curve -->
+  <g transform="translate(340, 210) scale(0.38)">
+    <polygon points="0,-75 22,-22 75,-22 32,10 49,63 0,30 -49,63 -32,10 -75,-22 -22,-22" fill="url(#goldGrad)" />
+  </g>
+
+  <!-- Minaret / Dome subtle arch silhouette at bottom -->
+  <path d="M 176 430 Q 256 380 336 430 L 336 450 L 176 450 Z" fill="url(#goldGrad)" opacity="0.3" />
+</svg>
