@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, RotateCcw, Volume2, Sparkles, ChevronRight, Check } from 'lucide-react';
-import { loadTasbihState, saveTasbihState, TasbihState } from '@/lib/storage';
+import { X, RotateCcw, Volume2, VolumeX, Sparkles, ChevronRight, Check } from 'lucide-react';
+import { loadProfile, loadTasbihState, saveTasbihState, TasbihState } from '@/lib/storage';
+import { adhanAudio } from '@/lib/audio-player';
 
 interface TasbihCounterProps {
   isOpen: boolean;
@@ -44,6 +45,10 @@ const PRESETS = [
 
 export const TasbihCounter: React.FC<TasbihCounterProps> = ({ isOpen, onClose }) => {
   const [state, setState] = useState<TasbihState>(() => loadTasbihState());
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const prof = loadProfile();
+    return prof.sound_settings?.tasbih_sound !== false;
+  });
 
   if (!isOpen) return null;
 
@@ -57,6 +62,11 @@ export const TasbihCounter: React.FC<TasbihCounterProps> = ({ isOpen, onClose })
       } catch {}
     }
 
+    // Acoustic wooden bead sound
+    if (soundEnabled) {
+      adhanAudio.playTasbihClick(0.5);
+    }
+
     const nextCount = state.count + 1;
     let nextCycles = state.totalCycles;
 
@@ -67,6 +77,12 @@ export const TasbihCounter: React.FC<TasbihCounterProps> = ({ isOpen, onClose })
           navigator.vibrate([60, 50, 60]);
         } catch {}
       }
+
+      // Uplifting completion chime
+      if (soundEnabled) {
+        adhanAudio.playCompletionTone(0.7);
+      }
+
       nextCycles += 1;
       const newState: TasbihState = {
         ...state,
@@ -111,6 +127,15 @@ export const TasbihCounter: React.FC<TasbihCounterProps> = ({ isOpen, onClose })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-sm rounded-3xl bg-gradient-to-b from-emerald-950 via-teal-950 to-emerald-950 border border-amber-500/40 p-6 shadow-2xl text-white text-center flex flex-col items-center">
+        {/* Sound Toggle */}
+        <button
+          onClick={() => setSoundEnabled((prev) => !prev)}
+          className="absolute top-4 left-4 p-1.5 rounded-full bg-emerald-900/60 hover:bg-emerald-800 text-amber-300 transition-colors"
+          title={soundEnabled ? 'Mute Bead Sound' : 'Enable Bead Sound'}
+        >
+          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-emerald-500" />}
+        </button>
+
         {/* Close Button */}
         <button
           onClick={onClose}

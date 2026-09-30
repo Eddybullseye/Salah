@@ -188,9 +188,9 @@ export const PrayerTrackerView: React.FC<PrayerTrackerViewProps> = ({
                 </button>
               )}
             </div>
-            <p className="text-xs text-emerald-200/70 mt-0.5">
+            <p className="text-xs text-emerald-200/70 mt-0.5" suppressHydrationWarning>
               Completed {completedCountToday} of 5 prayers on{' '}
-              <span className="font-semibold text-white">{selectedDate}</span>
+              <span className="font-semibold text-white" suppressHydrationWarning>{selectedDate}</span>
             </p>
           </div>
 
@@ -203,7 +203,7 @@ export const PrayerTrackerView: React.FC<PrayerTrackerViewProps> = ({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-2 text-xs font-mono font-medium text-emerald-100">
+            <span className="px-2 text-xs font-mono font-medium text-emerald-100" suppressHydrationWarning>
               {selectedDate}
             </span>
             <button

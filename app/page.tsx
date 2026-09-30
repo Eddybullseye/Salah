@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Home,
   CheckSquare,
@@ -22,10 +22,13 @@ import { TasbihCounter } from '@/components/TasbihCounter';
 import { AuthModal } from '@/components/AuthModal';
 import { RamadanCard } from '@/components/RamadanCard';
 import { OnboardingModal } from '@/components/OnboardingModal';
+import { AdhanPlayingModal } from '@/components/AdhanPlayingModal';
 import {
   calculatePrayerTimes,
   DEFAULT_PROFILE,
+  DEFAULT_SOUND_SETTINGS,
 } from '@/lib/prayer-times';
+import { adhanAudio } from '@/lib/audio-player';
 import {
   calculateStreakStats,
   loadBookmarks,
@@ -66,7 +69,7 @@ export default function SalahCompanionApp() {
   });
   const [bookmarks, setBookmarks] = useState<string[]>(() => loadBookmarks());
   const [readStories, setReadStories] = useState<string[]>(() => loadReadStories());
-  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [isOnline, setIsOnline] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [ramadanMode, setRamadanMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -80,12 +83,7 @@ export default function SalahCompanionApp() {
   const [isTasbihOpen, setIsTasbihOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('salah_onboarding_completed') !== 'true';
-    }
-    return false;
-  });
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   // Today's date string
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -205,6 +203,15 @@ export default function SalahCompanionApp() {
       });
     }
 
+    const initTimer = setTimeout(() => {
+      if (typeof navigator !== 'undefined') {
+        setIsOnline(navigator.onLine);
+      }
+      if (typeof window !== 'undefined' && localStorage.getItem('salah_onboarding_completed') !== 'true') {
+        setIsOnboardingOpen(true);
+      }
+    }, 150);
+
     const locationTimer = setTimeout(() => {
       if (profile.city_name === 'Makkah' && typeof navigator !== 'undefined' && 'geolocation' in navigator) {
         detectLocation();
@@ -223,6 +230,7 @@ export default function SalahCompanionApp() {
     navigator.serviceWorker?.addEventListener('message', handleSWMessage);
 
     return () => {
+      clearTimeout(initTimer);
       clearTimeout(locationTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -245,6 +253,62 @@ export default function SalahCompanionApp() {
   const { prayers, currentPrayer, nextPrayer } = useMemo(() => {
     return calculatePrayerTimes(new Date(), profile, todayLoggedStatuses);
   }, [profile, todayLoggedStatuses]);
+
+  // Adhan playback state
+  const [isAdhanModalOpen, setIsAdhanModalOpen] = useState(false);
+  const [activeAdhanPrayer, setActiveAdhanPrayer] = useState<MainPrayerName | null>(null);
+  const playedAdhansRef = useRef<Set<string>>(new Set());
+
+  // Manual Play Adhan action
+  const handlePlayAdhanManual = useCallback(
+    (prayer: MainPrayerName) => {
+      setActiveAdhanPrayer(prayer);
+      setIsAdhanModalOpen(true);
+      adhanAudio.playAdhan({
+        prayer,
+        soundSettings: profile.sound_settings,
+        forcePlay: true,
+      });
+    },
+    [profile.sound_settings]
+  );
+
+  // Periodic time ticker to trigger foreground adhan when prayer time arrives
+  useEffect(() => {
+    const checkPrayerTime = () => {
+      if (typeof window === 'undefined') return;
+      const nowDate = new Date();
+      const nowMs = nowDate.getTime();
+
+      prayers.forEach((p) => {
+        if (!p.isMainPrayer) return;
+        const pDate = p.dateObj;
+        const diffMs = nowMs - pDate.getTime();
+        // Trigger within 60 seconds after prayer starts
+        if (diffMs >= 0 && diffMs < 60000) {
+          const prayerKey = `${todayStr}-${p.name}`;
+          if (!playedAdhansRef.current.has(prayerKey)) {
+            playedAdhansRef.current.add(prayerKey);
+            const soundSettings = profile.sound_settings || DEFAULT_SOUND_SETTINGS;
+            const prayerSoundCfg = soundSettings.prayers[p.name as MainPrayerName] || { sound_mode: 'adhan' };
+
+            if (prayerSoundCfg.sound_mode !== 'silent' && prayerSoundCfg.sound_mode !== 'notification_only') {
+              setActiveAdhanPrayer(p.name as MainPrayerName);
+              setIsAdhanModalOpen(true);
+              adhanAudio.playAdhan({
+                prayer: p.name as MainPrayerName,
+                soundSettings,
+              });
+            }
+          }
+        }
+      });
+    };
+
+    checkPrayerTime();
+    const interval = setInterval(checkPrayerTime, 5000);
+    return () => clearInterval(interval);
+  }, [prayers, profile.sound_settings, todayStr]);
 
   // Streak & consistency statistics
   const streakStats = useMemo(() => {
@@ -332,6 +396,7 @@ export default function SalahCompanionApp() {
                   onLogPrayer={handleLogPrayer}
                   onOpenReminderSettings={() => setActiveTab('settings')}
                   loggedStatuses={todayLoggedStatuses}
+                  onPlayAdhan={handlePlayAdhanManual}
                 />
 
                 <PrayerTimesList
@@ -348,6 +413,7 @@ export default function SalahCompanionApp() {
                     });
                   }}
                   reminderSettings={profile.reminder_settings}
+                  onPlayAdhan={handlePlayAdhanManual}
                 />
               </div>
 
@@ -564,6 +630,40 @@ export default function SalahCompanionApp() {
         userId={currentUser?.id}
         cityName={profile.city_name}
       />
+
+      {/* Full-Screen Adhan Playing Modal with Stop, Snooze, and I Prayed */}
+      {activeAdhanPrayer && (
+        <AdhanPlayingModal
+          isOpen={isAdhanModalOpen}
+          prayer={activeAdhanPrayer}
+          arabicName={prayers.find((p) => p.name === activeAdhanPrayer)?.arabicName}
+          onClose={() => {
+            setIsAdhanModalOpen(false);
+            adhanAudio.stop();
+          }}
+          onMarkPrayed={(prayer) => {
+            handleLogPrayer(prayer, 'on_time');
+            setIsAdhanModalOpen(false);
+          }}
+          onSnooze={(prayer, minutes) => {
+            setIsAdhanModalOpen(false);
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              setTimeout(() => {
+                try {
+                  navigator.serviceWorker?.ready.then((reg) => {
+                    reg.showNotification(`Salah Reminder: ${prayer.toUpperCase()}`, {
+                      body: `Snooze finished (${minutes}m). Time to pray ${prayer}. Pause for Allah 🤍`,
+                      icon: '/icon-192.png',
+                      tag: `salah-snooze-${prayer}`,
+                    });
+                  });
+                } catch {}
+              }, minutes * 60000);
+            }
+          }}
+          completionToneEnabled={profile.sound_settings?.completion_tone !== false}
+        />
+      )}
     </div>
   );
 }

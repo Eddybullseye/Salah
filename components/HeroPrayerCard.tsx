@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, ChevronRight, Bell, Sparkles } from 'lucide-react';
+import { Clock, CheckCircle2, ChevronRight, Bell, Sparkles, Volume2 } from 'lucide-react';
 import { PrayerTimeDisplay, PrayerStatus, MainPrayerName } from '@/lib/types';
 import { formatCountdown } from '@/lib/prayer-times';
+import { useMounted } from '@/hooks/use-mounted';
 
 interface HeroPrayerCardProps {
   currentPrayer: PrayerTimeDisplay | null;
@@ -11,6 +12,7 @@ interface HeroPrayerCardProps {
   onLogPrayer: (prayer: MainPrayerName, status: PrayerStatus) => void;
   onOpenReminderSettings: () => void;
   loggedStatuses: Record<string, PrayerStatus>;
+  onPlayAdhan?: (prayer: MainPrayerName) => void;
 }
 
 export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
@@ -19,7 +21,9 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
   onLogPrayer,
   onOpenReminderSettings,
   loggedStatuses,
+  onPlayAdhan,
 }) => {
+  const mounted = useMounted();
   const [countdown, setCountdown] = useState<string>('00:00:00');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
 
@@ -57,12 +61,12 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
       <div className="relative z-10 flex flex-col gap-5">
         {/* Top Badges */}
         <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800/60 border border-emerald-700/50 text-xs font-medium text-emerald-200">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800/60 border border-emerald-700/50 text-xs font-medium text-emerald-200" suppressHydrationWarning>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>
-              {currentPrayer
+            <span suppressHydrationWarning>
+              {mounted && currentPrayer
                 ? `Current: ${currentPrayer.displayName} (${currentPrayer.timeStr})`
-                : 'Night Interval'}
+                : 'Current Prayer'}
             </span>
           </div>
 
@@ -83,15 +87,32 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
                 Next Prayer
               </p>
               <div className="flex items-baseline gap-3 mt-1">
-                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-                  {nextPrayer.displayName}
-                </h2>
-                <span className="text-2xl font-serif text-amber-300/80">
-                  {nextPrayer.arabicName}
-                </span>
-                <span className="text-lg font-medium text-emerald-200/80">
-                  at {nextPrayer.timeStr}
-                </span>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white" suppressHydrationWarning>
+                    {nextPrayer.displayName}
+                  </h2>
+                  <span className="text-2xl font-serif text-amber-300/80" suppressHydrationWarning>
+                    {nextPrayer.arabicName}
+                  </span>
+                  <span className="text-lg font-medium text-emerald-200/80" suppressHydrationWarning>
+                    {mounted ? `at ${nextPrayer.timeStr}` : ''}
+                  </span>
+                  {nextPrayer.overrideType === 'csv' && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Mosque Timetable
+                    </span>
+                  )}
+                  {nextPrayer.overrideType === 'fixed' && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      Manual Fixed
+                    </span>
+                  )}
+                  {nextPrayer.overrideType === 'offset' && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Adjusted
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -102,7 +123,7 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
               </span>
               <div className="flex items-center gap-2 mt-0.5">
                 <Clock className="w-5 h-5 text-amber-400" />
-                <span className="text-3xl sm:text-4xl font-mono font-bold text-amber-300 tracking-wider">
+                <span className="text-3xl sm:text-4xl font-mono font-bold text-amber-300 tracking-wider" suppressHydrationWarning>
                   {countdown}
                 </span>
               </div>
@@ -119,13 +140,13 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
         <div className="pt-2 border-t border-emerald-800/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="text-xs text-emerald-200/80 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>
+            <span suppressHydrationWarning>
               Prayer:{' '}
-              <strong className="text-white capitalize font-semibold">{prayerToLog}</strong>
+              <strong className="text-white capitalize font-semibold" suppressHydrationWarning>{prayerToLog}</strong>
               {currentLoggedStatus && (
                 <span className="ml-2 inline-flex items-center gap-1 text-emerald-300 font-medium">
                   • Status:{' '}
-                  <span className="capitalize text-amber-300">
+                  <span className="capitalize text-amber-300" suppressHydrationWarning>
                     {currentLoggedStatus.replace('_', ' ')}
                   </span>
                 </span>
@@ -133,20 +154,32 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
             </span>
           </div>
 
-          <div className="relative">
-            {!showStatusPicker ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {onPlayAdhan && (
               <button
-                onClick={() => setShowStatusPicker(true)}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-95 ${
-                  currentLoggedStatus
-                    ? 'bg-emerald-800/90 text-emerald-200 hover:bg-emerald-700/90 border border-emerald-600/50'
-                    : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-emerald-950 shadow-amber-500/20'
-                }`}
+                onClick={() => onPlayAdhan(prayerToLog)}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-semibold text-xs bg-emerald-800/80 hover:bg-emerald-700 text-amber-300 border border-emerald-600/50 shadow-md transition-all active:scale-95"
+                title={`Listen to ${prayerToLog.toUpperCase()} Adhan`}
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{currentLoggedStatus ? 'Update Status' : 'Mark as Prayed'}</span>
+                <Volume2 className="w-4 h-4 text-amber-400" />
+                <span>Play Adhan</span>
               </button>
-            ) : (
+            )}
+
+            <div className="relative">
+              {!showStatusPicker ? (
+                <button
+                  onClick={() => setShowStatusPicker(true)}
+                  className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all shadow-md active:scale-95 ${
+                    currentLoggedStatus
+                      ? 'bg-emerald-800/90 text-emerald-200 hover:bg-emerald-700/90 border border-emerald-600/50'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-emerald-950 shadow-amber-500/20'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{currentLoggedStatus ? 'Update Status' : 'Mark as Prayed'}</span>
+                </button>
+              ) : (
               <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-emerald-950 border border-amber-500/40 shadow-xl animate-fade-in">
                 {(['on_time', 'late', 'qada', 'missed'] as PrayerStatus[]).map((st) => (
                   <button
@@ -172,6 +205,7 @@ export const HeroPrayerCard: React.FC<HeroPrayerCardProps> = ({
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

@@ -13,8 +13,12 @@ import {
   X,
   Sparkles,
   ShieldCheck,
+  Volume2,
+  Music,
 } from 'lucide-react';
 import { isIOS, isStandalone, subscribeToPush } from '@/lib/web-push';
+import { useMounted } from '@/hooks/use-mounted';
+import { adhanAudio } from '@/lib/audio-player';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -31,12 +35,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   userId,
   cityName,
 }) => {
+  const mounted = useMounted();
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [notificationStatus, setNotificationStatus] = useState<'idle' | 'enabling' | 'granted' | 'denied'>('idle');
   const [locationGranted, setLocationGranted] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(() => adhanAudio.isAudioUnlocked());
 
-  const [isIOSDevice] = useState(() => (typeof window !== 'undefined' ? isIOS() : false));
-  const [isAppInstalled] = useState(() => (typeof window !== 'undefined' ? isStandalone() : false));
+  const isIOSDevice = mounted ? isIOS() : false;
+  const isAppInstalled = mounted ? isStandalone() : false;
 
   if (!isOpen) return null;
 
@@ -45,7 +51,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     setLocationGranted(true);
     setTimeout(() => {
       setCurrentStep(1);
-    }, 800);
+    }, 700);
   };
 
   const handleEnableNotifications = async () => {
@@ -54,11 +60,22 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
     if (res.success) {
       setNotificationStatus('granted');
       setTimeout(() => {
-        // If already installed or not on iOS, complete or go to step 2
         setCurrentStep(2);
-      }, 1000);
+      }, 900);
     } else {
       setNotificationStatus('denied');
+    }
+  };
+
+  const handleEnableAudio = async () => {
+    const success = await adhanAudio.unlockAudio();
+    if (success) {
+      setAudioUnlocked(true);
+      // Play brief pleasant soft confirmation chime
+      adhanAudio.playSoftReminderTone(0.7);
+      setTimeout(() => {
+        setCurrentStep(3);
+      }, 1000);
     }
   };
 
@@ -74,6 +91,11 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       subtitle: 'Timely reminders, Fajr wake-up alarms, and gentle nudges',
     },
     {
+      id: 'audio',
+      title: 'Adhan & Islamic Sounds',
+      subtitle: 'Unlock audio playback for Holy Adhan and gentle tones',
+    },
+    {
       id: 'install',
       title: isIOSDevice ? 'Add to iPhone Home Screen' : 'Install Salah Companion',
       subtitle: isIOSDevice
@@ -84,12 +106,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md rounded-3xl bg-gradient-to-b from-emerald-950 via-teal-950 to-emerald-950 border border-amber-500/40 p-6 sm:p-7 shadow-2xl text-white flex flex-col justify-between min-h-[500px]">
+      <div className="relative w-full max-w-md rounded-3xl bg-gradient-to-b from-emerald-950 via-teal-950 to-emerald-950 border border-amber-500/40 p-6 sm:p-7 shadow-2xl text-white flex flex-col justify-between min-h-[520px]">
         {/* Top Progress & Skip */}
         <div>
           <div className="flex items-center justify-between pb-3 border-b border-emerald-800/40">
             <div className="flex items-center gap-1.5">
-              {[0, 1, 2].map((idx) => (
+              {[0, 1, 2, 3].map((idx) => (
                 <div
                   key={idx}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -133,7 +155,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                   <span>100% Private & Works Offline</span>
                 </div>
                 <p className="text-[11px] text-emerald-300/70 leading-relaxed">
-                  Your coordinates stay private on your device. Prayer times are calculated with the mathematical <code className="text-amber-300">adhan</code> engine even with zero internet connectivity.
+                  Your coordinates stay private on your device. Prayer times are calculated with mathematical precision even with zero internet connectivity.
                 </p>
                 {cityName && cityName !== 'Makkah' && (
                   <div className="pt-1 text-[11px] text-amber-300 font-medium">
@@ -228,8 +250,61 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </div>
           )}
 
-          {/* STEP 2: PWA INSTALLATION (ESPECIALLY FOR iOS 16.4+) */}
+          {/* STEP 2: ADHAN SOUND & iOS AUDIO UNLOCK */}
           {currentStep === 2 && (
+            <div className="mt-6 text-center space-y-4 animate-fade-in">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-emerald-800/40 border border-amber-500/40 flex items-center justify-center shadow-inner">
+                <Volume2 className="w-8 h-8 text-amber-400" />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold tracking-tight text-white">
+                  {steps[2].title}
+                </h3>
+                <p className="text-xs text-emerald-200/80 mt-1 max-w-xs mx-auto leading-relaxed">
+                  Choose from Makkah, Madinah, or Al-Aqsa style adhan voices and soft acoustic reminder tones.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-900/40 border border-emerald-800/50 text-left space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-amber-300 font-semibold">
+                  <Music className="w-4 h-4" />
+                  <span>Browser Audio Activation</span>
+                </div>
+                <p className="text-[11px] text-emerald-300/70 leading-relaxed">
+                  {isIOSDevice
+                    ? 'iOS Safari requires a single tap gesture to authorize adhan audio for this session. Tapping below tests your sound output.'
+                    : 'Unlock audio playback so Salah Companion can play the adhan smoothly whenever prayer time arrives.'}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={handleEnableAudio}
+                  className={`w-full py-3.5 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    audioUnlocked
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-emerald-950 shadow-amber-500/20'
+                  }`}
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span>
+                    {audioUnlocked ? 'Adhan Sound Enabled ✓ (Chime Tested)' : 'Enable Adhan Sound (Test Chime)'}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="w-full mt-2 text-center text-xs text-emerald-300/70 hover:text-emerald-100 py-1"
+                >
+                  Skip sound test
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: PWA INSTALLATION (ESPECIALLY FOR iOS 16.4+) */}
+          {currentStep === 3 && (
             <div className="mt-6 text-center space-y-4 animate-fade-in">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-emerald-800/40 border border-amber-500/40 flex items-center justify-center shadow-inner">
                 <Smartphone className="w-8 h-8 text-amber-400" />
@@ -237,7 +312,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
               <div>
                 <h3 className="text-xl font-bold tracking-tight text-white">
-                  {steps[2].title}
+                  {steps[3].title}
                 </h3>
                 <p className="text-xs text-emerald-200/80 mt-1 max-w-xs mx-auto leading-relaxed">
                   {isIOSDevice
@@ -323,7 +398,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               <span>Back</span>
             </button>
             <span className="text-[11px] text-emerald-400/60">
-              Step {currentStep + 1} of 3
+              Step {currentStep + 1} of 4
             </span>
           </div>
         )}

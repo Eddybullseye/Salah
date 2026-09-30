@@ -6,7 +6,9 @@ const PRECACHE_ASSETS = [
   '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/apple-touch-icon.png'
+  '/icon-badge-96.png',
+  '/apple-touch-icon.png',
+  '/offline.html'
 ];
 
 // Install: Pre-cache app shell assets
@@ -36,23 +38,58 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Stale-while-revalidate for static assets, network-first for navigation
+const ADHAN_CACHE_NAME = 'salah-adhan-cache-v1';
+
+// Fetch: Audio Cache-First, Stale-while-revalidate for static assets, network-first for navigation
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  // Skip non-GET and API or external requests
+  // Skip non-GET requests
   if (request.method !== 'GET') return;
   
   const url = new URL(request.url);
 
-  // For navigation (HTML), try network first, then cache
+  // Audio files (Supabase Storage public adhan bucket or local /audio/ directory)
+  const isAudioRequest =
+    url.pathname.endsWith('.mp3') ||
+    url.pathname.endsWith('.wav') ||
+    url.pathname.endsWith('.ogg') ||
+    url.pathname.endsWith('.m4a') ||
+    url.pathname.startsWith('/audio/') ||
+    url.pathname.includes('/storage/v1/object/public/adhan/');
+
+  if (isAudioRequest) {
+    event.respondWith(
+      caches.open(ADHAN_CACHE_NAME).then(async (cache) => {
+        const cachedResponse = await cache.match(request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        try {
+          const networkResponse = await fetch(request);
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch (err) {
+          return cachedResponse || Response.error();
+        }
+      })
+    );
+    return;
+  }
+
+  // For navigation (HTML), try network first, then cache, then offline page fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () => {
         const cached = await caches.match(request);
         if (cached) return cached;
         const rootCached = await caches.match('/');
-        return rootCached || Response.error();
+        if (rootCached) return rootCached;
+        const offlinePage = await caches.match('/offline.html');
+        return offlinePage || Response.error();
       })
     );
     return;
@@ -94,7 +131,9 @@ self.addEventListener('push', (event) => {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: 'salah-notification',
-    data: { url: '/?tab=home' }
+    prayer: 'asr',
+    sound_mode: 'adhan',
+    data: { url: '/adhan?prayer=asr' }
   };
 
   if (event.data) {
@@ -106,16 +145,28 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  const prayerName = data.prayer || (data.data && data.data.prayer) || '';
+  const soundMode = data.sound_mode || data.soundMode || (data.data && data.data.sound_mode) || 'adhan';
+  const isSilent = soundMode === 'silent';
+
+  // Build deep link for prayer if not explicitly provided
+  let destinationUrl = data.data?.url || (prayerName ? `/adhan?prayer=${prayerName}&sound=${soundMode}` : '/');
+
   const notificationOptions = {
     body: data.body,
     icon: data.icon || '/icon-192.png',
-    badge: data.badge || '/icon-192.png',
-    tag: data.tag || 'salah-reminder-' + Date.now(),
+    badge: '/icon-badge-96.png',
+    tag: data.tag || (prayerName ? `salah-prayer-${prayerName}` : `salah-reminder-${Date.now()}`),
     renotify: true,
-    requireInteraction: false,
-    silent: false,
-    vibrate: [200, 100, 200],
-    data: data.data || { url: '/' },
+    requireInteraction: true,
+    silent: isSilent,
+    vibrate: isSilent ? [] : [200, 100, 200],
+    data: {
+      url: destinationUrl,
+      prayer: prayerName,
+      sound_mode: soundMode,
+      date: new Date().toISOString().split('T')[0]
+    },
     actions: data.actions || [
       { action: 'mark_prayed', title: '✓ I prayed' },
       { action: 'snooze_10', title: '⏰ Remind in 10m' }

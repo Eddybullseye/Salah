@@ -17,6 +17,8 @@ interface HeaderProps {
   userName?: string | null;
 }
 
+import { useMounted } from '@/hooks/use-mounted';
+
 export const Header: React.FC<HeaderProps> = ({
   cityName,
   countryName,
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   userName,
 }) => {
   const hijri = getHijriDate();
+  const mounted = useMounted();
 
   return (
     <header className="sticky top-0 z-30 bg-emerald-950/90 backdrop-blur-md border-b border-emerald-800/40 px-4 py-3 transition-colors">
@@ -40,18 +43,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-xl">🌙</span>
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5" suppressHydrationWarning>
               <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1">
                 Salah <span className="text-amber-400 font-serif font-normal">Companion</span>
               </h1>
-              {!isOnline && (
+              {mounted && !isOnline && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   <WifiOff className="w-2.5 h-2.5" />
                   Offline
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-emerald-200/70 font-medium">
+            <p className="text-[11px] text-emerald-200/70 font-medium" suppressHydrationWarning>
               {hijri.formatted} <span className="opacity-60">•</span> <span className="font-serif">{hijri.formattedArabic}</span>
             </p>
           </div>
@@ -67,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Refresh GPS Location"
           >
             <MapPin className="w-3.5 h-3.5 text-amber-400" />
-            <span className="max-w-[100px] truncate">{cityName || 'Makkah'}</span>
+            <span className="max-w-[100px] truncate" suppressHydrationWarning>{cityName || 'Makkah'}</span>
             <RefreshCw className={`w-3 h-3 text-emerald-400 ${isLocating ? 'animate-spin' : ''}`} />
           </button>
 
@@ -98,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Account & Sync"
           >
             <User className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden md:inline max-w-[90px] truncate">{userName || 'Account'}</span>
+            <span className="hidden md:inline max-w-[90px] truncate" suppressHydrationWarning>{userName || 'Account'}</span>
           </button>
         </div>
       </div>

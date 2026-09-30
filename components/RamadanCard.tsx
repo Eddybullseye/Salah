@@ -78,7 +78,7 @@ export const RamadanCard: React.FC<RamadanCardProps> = ({
             </span>
             <div className="flex items-center gap-2 mt-1">
               <Clock className="w-4 h-4 text-amber-400" />
-              <span className="text-2xl font-mono font-bold text-amber-300">{countdown}</span>
+              <span className="text-2xl font-mono font-bold text-amber-300" suppressHydrationWarning>{countdown}</span>
             </div>
           </div>
           <span className="text-3xl">{isFasting ? '🌅' : '🌙'}</span>
@@ -90,14 +90,14 @@ export const RamadanCard: React.FC<RamadanCardProps> = ({
             <span className="text-[10px] text-emerald-300/70 uppercase font-semibold flex items-center gap-1">
               <Sunrise className="w-3 h-3 text-amber-400" /> Suhoor Stop
             </span>
-            <span className="text-sm font-bold text-white mt-0.5">{fajrStr}</span>
+            <span className="text-sm font-bold text-white mt-0.5" suppressHydrationWarning>{fajrStr}</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-emerald-900/30 border border-emerald-800/30 flex flex-col justify-center">
             <span className="text-[10px] text-emerald-300/70 uppercase font-semibold flex items-center gap-1">
               <Sunset className="w-3 h-3 text-amber-400" /> Iftar (Fast Break)
             </span>
-            <span className="text-sm font-bold text-white mt-0.5">{maghribStr}</span>
+            <span className="text-sm font-bold text-white mt-0.5" suppressHydrationWarning>{maghribStr}</span>
           </div>
         </div>
       </div>

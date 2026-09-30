@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, Clock, Bell, BellOff, MoreHorizontal, ChevronRight } from 'lucide-react';
+import { Check, Clock, Bell, BellOff, MoreHorizontal, ChevronRight, Volume2 } from 'lucide-react';
 import { PrayerTimeDisplay, PrayerStatus, MainPrayerName, ReminderSettings } from '@/lib/types';
 
 interface PrayerTimesListProps {
@@ -9,6 +9,7 @@ interface PrayerTimesListProps {
   onLogPrayer: (prayer: MainPrayerName, status: PrayerStatus) => void;
   onToggleReminder?: (prayer: MainPrayerName) => void;
   reminderSettings?: ReminderSettings | Record<string, { enabled: boolean }>;
+  onPlayAdhan?: (prayer: MainPrayerName) => void;
 }
 
 export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
@@ -16,6 +17,7 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
   onLogPrayer,
   onToggleReminder,
   reminderSettings,
+  onPlayAdhan,
 }) => {
   const [activeMenuPrayer, setActiveMenuPrayer] = useState<string | null>(null);
 
@@ -23,32 +25,32 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
     switch (status) {
       case 'on_time':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          <span suppressHydrationWarning className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
             <Check className="w-3 h-3" />
             On Time
           </span>
         );
       case 'late':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span suppressHydrationWarning className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
             Late
           </span>
         );
       case 'qada':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+          <span suppressHydrationWarning className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-500/20 text-teal-300 border border-teal-500/30">
             Qada
           </span>
         );
       case 'missed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+          <span suppressHydrationWarning className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
             Missed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-300/80 hover:bg-emerald-800/60 border border-emerald-700/40 transition-colors">
+          <span suppressHydrationWarning className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-300/80 hover:bg-emerald-800/60 border border-emerald-700/40 transition-colors">
             Tap to Log
           </span>
         );
@@ -74,6 +76,7 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
           return (
             <div
               key={prayer.name}
+              suppressHydrationWarning
               className={`relative px-4 sm:px-5 py-3.5 flex items-center justify-between transition-colors ${
                 prayer.isNext
                   ? 'bg-amber-500/10 border-l-4 border-l-amber-500'
@@ -85,6 +88,7 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
               {/* Prayer Name & Arabic */}
               <div className="flex items-center gap-3">
                 <div
+                  suppressHydrationWarning
                   className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-medium ${
                     prayer.isNext
                       ? 'bg-amber-500 text-emerald-950 font-bold'
@@ -97,25 +101,59 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm sm:text-base font-semibold text-white">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm sm:text-base font-semibold text-white" suppressHydrationWarning>
                       {prayer.displayName}
                     </span>
-                    <span className="text-xs font-serif text-emerald-300/70">
+                    <span className="text-xs font-serif text-emerald-300/70" suppressHydrationWarning>
                       {prayer.arabicName}
                     </span>
                     {prayer.isNext && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/30 text-amber-300 uppercase tracking-wider">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/30 text-amber-300 uppercase tracking-wider" suppressHydrationWarning>
                         Next
                       </span>
                     )}
+                    {prayer.overrideType === 'csv' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        Mosque
+                      </span>
+                    )}
+                    {prayer.overrideType === 'fixed' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        Fixed
+                      </span>
+                    )}
+                    {prayer.overrideType === 'offset' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Offset
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-emerald-200/70 font-mono mt-0.5">{prayer.timeStr}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-white font-mono font-bold" suppressHydrationWarning>{prayer.timeStr}</p>
+                    {prayer.calculatedTimeStr && prayer.calculatedTimeStr !== prayer.timeStr && (
+                      <span className="text-[10px] text-emerald-400/60 font-mono" suppressHydrationWarning>
+                        (calc: {prayer.calculatedTimeStr})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Right Side Actions */}
               <div className="flex items-center gap-2">
+                {/* Play Adhan button (main prayers only) */}
+                {prayer.isMainPrayer && onPlayAdhan && (
+                  <button
+                    onClick={() => onPlayAdhan(prayer.name as MainPrayerName)}
+                    className="p-1.5 rounded-lg text-emerald-400/80 hover:text-amber-300 hover:bg-emerald-900/60 transition-colors"
+                    title={`Play ${prayer.displayName} Adhan`}
+                    aria-label={`Play ${prayer.displayName} Adhan`}
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                )}
+
                 {/* Per-prayer reminder toggle (main prayers only) */}
                 {prayer.isMainPrayer && onToggleReminder && (
                   <button
@@ -144,6 +182,7 @@ export const PrayerTimesList: React.FC<PrayerTimesListProps> = ({
                         setActiveMenuPrayer(isMenuOpen ? null : prayer.name)
                       }
                       className="transition-transform active:scale-95"
+                      suppressHydrationWarning
                     >
                       {getStatusBadge(prayer.status)}
                     </button>

@@ -307,3 +307,46 @@ export const INITIAL_DAILY_CONTENT: DailyAyahHadith[] = [
     day_of_year: 10,
   },
 ];
+
+export const INITIAL_ADHAN_VOICES: import('./types').AdhanVoice[] = [
+  {
+    id: 'voice-makkah',
+    name: 'Makkah Style (Grand Mosque)',
+    muezzin: 'Sheikh Ali Mullah',
+    description: 'The iconic, melodious maqam Hijaz adhan of the Holy Kaaba in Makkah al-Mukarramah.',
+    file_url: '/audio/adhan-makkah.mp3',
+    fajr_file_url: '/audio/adhan-makkah-fajr.mp3',
+    duration_seconds: 195,
+    is_default: true,
+  },
+  {
+    id: 'voice-madinah',
+    name: "Madinah Style (Prophet's Mosque)",
+    muezzin: 'Sheikh Abdul Majeed Surayhi',
+    description: "Serene, reverent adhan echoing across Al-Masjid an-Nabawi in Madinah al-Munawwarah.",
+    file_url: '/audio/adhan-madinah.mp3',
+    fajr_file_url: '/audio/adhan-madinah-fajr.mp3',
+    duration_seconds: 210,
+    is_default: false,
+  },
+  {
+    id: 'voice-alaqsa',
+    name: 'Al-Aqsa Style (Jerusalem)',
+    muezzin: 'Al-Quds Historic Muezzin',
+    description: 'Soulful, resonant adhan of the sacred Al-Aqsa Mosque in Jerusalem.',
+    file_url: '/audio/adhan-alaqsa.mp3',
+    fajr_file_url: '/audio/adhan-alaqsa-fajr.mp3',
+    duration_seconds: 180,
+    is_default: false,
+  },
+  {
+    id: 'voice-soft-reminder',
+    name: 'Soft Reminder Chime',
+    muezzin: 'Discreet Acoustic Chime',
+    description: 'A gentle, discreet acoustic harmonic reminder tone suitable for workplaces and quiet environments.',
+    file_url: '/audio/reminder-chime.mp3',
+    fajr_file_url: '/audio/reminder-chime.mp3',
+    duration_seconds: 15,
+    is_default: false,
+  },
+];

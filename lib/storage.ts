@@ -1,5 +1,5 @@
 import { getSupabase } from './supabase';
-import { PrayerLog, PrayerStatus, StreakStats, UserProfile } from './types';
+import { MosqueTimetableOverride, PrayerLog, PrayerStatus, StreakStats, UserProfile } from './types';
 import { DEFAULT_PROFILE } from './prayer-times';
 
 const PROFILE_KEY = 'salah_user_profile';
@@ -7,19 +7,62 @@ const LOGS_KEY = 'salah_prayer_logs';
 const BOOKMARKS_KEY = 'salah_user_bookmarks';
 const READ_STORIES_KEY = 'salah_read_stories';
 const TASBIH_KEY = 'salah_tasbih_data';
+const TIMETABLE_OVERRIDES_KEY = 'salah_timetable_overrides';
 
-// Load User Profile
+// Load User Profile with safe defaults
 export function loadProfile(): UserProfile {
   if (typeof window === 'undefined') return DEFAULT_PROFILE;
   try {
     const data = localStorage.getItem(PROFILE_KEY);
     if (data) {
-      return { ...DEFAULT_PROFILE, ...JSON.parse(data) };
+      const parsed = JSON.parse(data);
+      return {
+        ...DEFAULT_PROFILE,
+        ...parsed,
+        adjustments: {
+          ...DEFAULT_PROFILE.adjustments,
+          ...(parsed.adjustments || {}),
+        },
+        prayer_modes: {
+          ...DEFAULT_PROFILE.prayer_modes,
+          ...(parsed.prayer_modes || {}),
+        },
+      };
     }
   } catch (e) {
     console.warn('Error reading profile from localStorage:', e);
   }
   return DEFAULT_PROFILE;
+}
+
+// Load Mosque Timetable Overrides (CSV / Mosque Imported)
+export function loadTimetableOverrides(): MosqueTimetableOverride[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const data = localStorage.getItem(TIMETABLE_OVERRIDES_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch (e) {
+    console.warn('Error reading timetable overrides:', e);
+  }
+  return [];
+}
+
+// Save Mosque Timetable Overrides
+export function saveTimetableOverrides(overrides: MosqueTimetableOverride[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(TIMETABLE_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch (e) {
+    console.warn('Error saving timetable overrides:', e);
+  }
+}
+
+// Clear Mosque Timetable Overrides
+export function clearTimetableOverrides(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TIMETABLE_OVERRIDES_KEY);
 }
 
 // Save User Profile
